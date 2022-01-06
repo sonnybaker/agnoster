@@ -13,8 +13,8 @@ agnoster::set_default AGNOSTER_ICON_BGJOBS \u2699
 
 agnoster::set_default AGNOSTER_ICON_SCM_BRANCH \u2387
 agnoster::set_default AGNOSTER_ICON_SCM_REF \u27a6
-agnoster::set_default AGNOSTER_ICON_SCM_STAGED '…'
-agnoster::set_default AGNOSTER_ICON_SCM_STASHED '~'
+agnoster::set_default AGNOSTER_ICON_SCM_STAGED '+ '
+agnoster::set_default AGNOSTER_ICON_SCM_STASHED '~ '
 
 function agnoster::segment --desc 'Create prompt segment'
   set bg $argv[1]
@@ -44,7 +44,7 @@ function agnoster::context
   end
 
   if [ ! -z "$IN_NIX_SHELL" ]
-    agnoster::segment red black "nix "
+    agnoster::segment red '000' "nix "
   end
 end
 
@@ -70,49 +70,50 @@ end
 
 # Git {{{
 # Utils {{{
+
+function agnoster::git::branch
+  echo $AGNOSTER_ICON_SCM_BRANCH (git symbolic-ref HEAD ^/dev/null | sed -e 's|^refs/heads/||')
+end
+
+function agnoster::git::dirty
+  echo (git status -s --ignore-submodules=dirty ^/dev/null)
+end
+
 function agnoster::git::is_repo
-  command git rev-parse --is-inside-work-tree 2>/dev/null >/dev/null
+  command git rev-parse --is-inside-work-tree ^/dev/null >/dev/null
 end
 
 function agnoster::git::color
-  if command git diff --no-ext-diff --quiet --exit-code
+  if ! [ (agnoster::git::dirty) ]
     echo "green"
   else
     echo "yellow"
   end
 end
 
-function agnoster::git::branch
-  set -l ref (command git symbolic-ref HEAD 2>/dev/null)
-  if [ "$status" -ne 0 ]
-    set -l branch (command git show-ref --head -s --abbrev | head -n1 2>/dev/null)
-    set ref "$AGNOSTER_ICON_SCM_REF $branch"
-  end
-  echo "$ref" | sed "s|\s*refs/heads/|$AGNOSTER_ICON_SCM_BRANCH |1"
-end
-
 function agnoster::git::ahead
-  command git rev-list --left-right '@{upstream}...HEAD' 2>/dev/null | \
+  command git rev-list --left-right '@{upstream}...HEAD' ^/dev/null | \
     awk '
       />/ {a += 1}
       /</ {b += 1}
       {if (a > 0 && b > 0) nextfile}
       END {
         if (a > 0 && b > 0)
-          print "±";
+          print "± ";
         else if (a > 0)
-          print "+";
+          print " ";
         else if (b > 0)
-          print "-"
+          print "- "
       }'
 end
 
 function agnoster::git::stashed
   command git rev-parse --verify --quiet refs/stash >/dev/null; and echo -n "$AGNOSTER_ICON_SCM_STASHED"
+  echo -n ''
 end
 
 function agnoster::git::staged
-  command git diff --cached --no-ext-diff --quiet --exit-code; or echo -n "$AGNOSTER_ICON_SCM_STAGED"
+  command git diff --cached --no-ext-diff --quiet --exit-code; or echo -n "$AGNOSTER_ICON_SCM_STAGED "
 end
 # }}}
 
@@ -124,9 +125,10 @@ function agnoster::git -d "Display the actual git state"
   set -l branch (agnoster::git::branch)
   set -l ahead (agnoster::git::ahead)
 
-  set -l content "$branch$ahead$staged$stashed"
+  # set -l content "$branch$ahead$staged$stashed"
+  set -l content "$branch $ahead$staged"
 
-  agnoster::segment (agnoster::git::color) black "$content "
+  agnoster::segment (agnoster::git::color) '000' "$content"
 end
 # }}}
 
@@ -135,7 +137,7 @@ function agnoster::dir -d 'Print current working directory'
   if set -q AGNOSTER_SEGMENT_SEPARATOR[2]
     set dir (echo "$dir" | sed "s,/,$AGNOSTER_SEGMENT_SEPARATOR[2],g")
   end
-  agnoster::segment blue black "$dir "
+  agnoster::segment blue '000' "$dir "
 end
 
 function agnoster::finish
@@ -148,7 +150,7 @@ function fish_prompt
   set -g __agnoster_last_status $status
 
   agnoster::status
-  agnoster::context
+  # agnoster::context
   agnoster::dir
   agnoster::git
   agnoster::finish
