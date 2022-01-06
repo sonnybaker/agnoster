@@ -68,19 +68,20 @@ function agnoster::status
   end
 end
 
+
 # Git {{{
 # Utils {{{
 
 function agnoster::git::branch
-  echo $AGNOSTER_ICON_SCM_BRANCH (git symbolic-ref HEAD ^/dev/null | sed -e 's|^refs/heads/||')
+  echo $AGNOSTER_ICON_SCM_BRANCH (git symbolic-ref HEAD 2>/dev/null | sed -e 's|^refs/heads/||')
 end
 
 function agnoster::git::dirty
-  echo (git status -s --ignore-submodules=dirty ^/dev/null)
+  echo (git status -s --ignore-submodules=dirty 2>/dev/null)
 end
 
 function agnoster::git::is_repo
-  command git rev-parse --is-inside-work-tree ^/dev/null >/dev/null
+  command git rev-parse --is-inside-work-tree 2>/dev/null >/dev/null
 end
 
 function agnoster::git::color
@@ -92,7 +93,7 @@ function agnoster::git::color
 end
 
 function agnoster::git::ahead
-  command git rev-list --left-right '@{upstream}...HEAD' ^/dev/null | \
+  command git rev-list --left-right '@{upstream}...HEAD' 2>/dev/null | \
     awk '
       />/ {a += 1}
       /</ {b += 1}
